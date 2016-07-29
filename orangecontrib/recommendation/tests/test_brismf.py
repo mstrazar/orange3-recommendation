@@ -192,6 +192,27 @@ class TestBRISMF(unittest.TestCase):
         self.assertTrue(all(test))
 
 
+    def test_BRISMF_alpha_bias(self):
+        # Load data
+        data = Orange.data.Table('ratings.tab')
+
+        for random_state in range(5):
+            alpha_bias = [0, 0.007]
+            objectives = []
+            for alpha in alpha_bias:
+                learner = BRISMFLearner(K=2, steps=50, verbose=False,
+                                             alpha_bias=alpha, random_state=random_state)
+                recommender = learner(data)
+                objective = recommender.compute_objective(data=data,
+                                                          beta=learner.beta)
+                objectives.append(objective)
+
+            # Assert objective values decrease for the given random state
+            test = list(
+                map(lambda t: t[0] >= t[1], zip(objectives, objectives[1:])))
+            self.assertTrue(all(test))
+
+
 
 if __name__ == "__main__":
     # Test all
@@ -199,7 +220,7 @@ if __name__ == "__main__":
 
     # Test single test
     suite = unittest.TestSuite()
-    suite.addTest(TestBRISMF("test_BRISMF_input_data_continuous"))
+    suite.addTest(TestBRISMF("test_BRISMF_alpha_bias"))
     runner = unittest.TextTestRunner()
     runner.run(suite)
 
