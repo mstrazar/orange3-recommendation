@@ -61,6 +61,9 @@ def _matrix_factorization(data, bias, shape, order, K, steps, alpha, beta, alpha
            alpha: float
                The learning rate of stochastic gradient descent.
 
+           alpha_bias: float
+            The learning rate of stochastic gradient descent (for bias parameters).
+
            beta: float
                The regularization parameter.
 
