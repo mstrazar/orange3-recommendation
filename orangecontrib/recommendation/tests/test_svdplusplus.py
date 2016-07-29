@@ -162,12 +162,36 @@ class TestSVDPlusPlus(unittest.TestCase):
                                               Q=recommender.Q,
                                               Y=recommender.Y,
                                               bias=learner.bias,
-                                              beta=learner.beta))
+                                              beta=learner.beta,))
 
         # Assert objective values decrease
         test = list(
             map(lambda t: t[0] >= t[1], zip(objectives, objectives[1:])))
         self.assertTrue(all(test))
+
+
+    def test_SVDPlusPlus_alpha_bias(self):
+        # Load data
+        data = Orange.data.Table('ratings.tab')
+
+        for random_state in range(5):
+            alpha_bias = [0, 0.007]
+            objectives = []
+            for alpha in alpha_bias:
+                learner = SVDPlusPlusLearner(K=2, steps=50, verbose=False,
+                                             alpha_bias=alpha, random_state=random_state)
+                recommender = learner(data)
+                objectives.append(
+                    recommender.compute_objective(data=data, P=recommender.P,
+                                                  Q=recommender.Q,
+                                                  Y=recommender.Y,
+                                                  bias=learner.bias,
+                                                  beta=learner.beta))
+
+            # Assert objective values decrease for the given random state
+            test = list(
+                map(lambda t: t[0] >= t[1], zip(objectives, objectives[1:])))
+            self.assertTrue(all(test))
 
 
 if __name__ == "__main__":
@@ -176,7 +200,7 @@ if __name__ == "__main__":
 
     # Test single test
     suite = unittest.TestSuite()
-    suite.addTest(TestSVDPlusPlus("test_SVDPlusPlus_input_data_continuous"))
+    suite.addTest(TestSVDPlusPlus("test_SVDPlusPlus_alpha_bias"))
     runner = unittest.TextTestRunner()
     runner.run(suite)
 
