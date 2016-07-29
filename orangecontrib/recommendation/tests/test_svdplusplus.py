@@ -155,7 +155,7 @@ class TestSVDPlusPlus(unittest.TestCase):
         objectives = []
 
         for step in steps:
-            learner = SVDPlusPlusLearner(K=2, steps=step, verbose=False)
+            learner = SVDPlusPlusLearner(K=2, steps=step, verbose=False, random_state=42)
             recommender = learner(data)
             objectives.append(
                 recommender.compute_objective(data=data, P=recommender.P,
