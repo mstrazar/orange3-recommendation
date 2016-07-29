@@ -44,7 +44,7 @@ def _compute_objective(users, items, global_avg, dUsers, dItems, P, Q, target,
     return objective.sum()
 
 
-def _matrix_factorization(data, bias, shape, order, K, steps, alpha, beta,
+def _matrix_factorization(data, bias, shape, order, K, steps, alpha, beta, alpha_bias=0,
                           verbose=False, random_state=None):
     """ Factorize either a dense matrix or a sparse matrix into two low-rank
         matrices which represents user and item factors.
@@ -104,10 +104,19 @@ def _matrix_factorization(data, bias, shape, order, K, steps, alpha, beta,
             rij_pred = _predict(i, j, globalAvg, dUsers, dItems, P, Q)
             eij = rij_pred - data.Y[k]
 
+            bi = dItems[j]
+            bu = dUsers[i]
+
+            tempBu = alpha_bias * (eij + beta * bu)
+            tempBi = alpha_bias * (eij + beta * bi)
+
             tempP = alpha * 2 * (eij * Q[j] + beta * P[i])
             tempQ = alpha * 2 * (eij * P[i] + beta * Q[j])
             P[i] -= tempP
             Q[j] -= tempQ
+
+            dItems[j] -= tempBi
+            dUsers[i] -= tempBu
 
         if verbose:
             print('\tTime: %.3fs' % (time.time() - start))
@@ -143,10 +152,11 @@ class BRISMFLearner(Learner):
 
     def __init__(self, K=5, steps=25, alpha=0.07, beta=0.1, min_rating=None,
                  max_rating=None, preprocessors=None, verbose=False,
-                 random_state=None):
+                 random_state=None, alpha_bias=0.007):
         self.K = K
         self.steps = steps
         self.alpha = alpha
+        self.alpha_bias = alpha_bias
         self.beta = beta
         self.P = None
         self.Q = None
@@ -180,6 +190,7 @@ class BRISMFLearner(Learner):
                                                order=self.order, K=self.K,
                                                steps=self.steps,
                                                alpha=self.alpha,
+                                               alpha_bias=self.alpha_bias,
                                                beta=self.beta, verbose=False,
                                                random_state=self.random_state)
 
