@@ -54,7 +54,7 @@ def save_in_cache(matrix, key, cache):
     return cache[key]
 
 def _matrix_factorization(ratings, feedback, bias, shape, order, K, steps,
-                      alpha, beta,verbose=False, random_state=None):
+                      alpha, beta, alpha_bias, verbose=False, random_state=None):
 
     """ Factorize either a dense matrix or a sparse matrix into two low-rank
      matrices which represents user and item factors.
@@ -70,6 +70,9 @@ def _matrix_factorization(ratings, feedback, bias, shape, order, K, steps,
 
         alpha: float
             The learning rate of stochastic gradient descent.
+
+        alpha_bias: float
+            The learning rate of stochastic gradient descent (for bias parameters).
 
         beta: float
             The regularization parameter.
@@ -123,6 +126,11 @@ def _matrix_factorization(ratings, feedback, bias, shape, order, K, steps,
                 _predict(u, j, globalAvg, dUsers, dItems, P, Q, Y, feedback_u)
             eij = ruj_pred - ratings[u, j]
 
+            bi = dItems[j]
+            bu = dUsers[u]
+            tempBu = alpha_bias * (eij + beta * bu)
+            tempBi = alpha_bias * (eij + beta * bi)
+
             tempP = alpha * 2 * (eij * Q[j, :] + beta * P[u, :])
             tempQ = alpha * 2 * (eij * (P[u, :] + y_term) + beta * Q[j, :])
 
@@ -131,6 +139,8 @@ def _matrix_factorization(ratings, feedback, bias, shape, order, K, steps,
                     Y[i] -= alpha * 2 * ((eij/norm_feedback) * Q[j, :] +
                                          beta * Y[i])
 
+            dItems[j] -= tempBi
+            dUsers[u] -= tempBu
             P[u] -= tempP
             Q[j] -= tempQ
 
@@ -166,12 +176,13 @@ class SVDPlusPlusLearner(Learner):
 
     name = 'SVD++'
 
-    def __init__(self, K=5, steps=25, alpha=0.07, beta=0.1, min_rating=None,
+    def __init__(self, K=5, steps=25, alpha=0.07, alpha_bias=0.007, beta=0.1, min_rating=None,
                  max_rating=None, feedback=None, preprocessors=None,
                  verbose=False, random_state=None):
         self.K = K
         self.steps = steps
         self.alpha = alpha
+        self.alpha_bias = alpha_bias
         self.beta = beta
         self.P = None
         self.Q = None
@@ -211,7 +222,7 @@ class SVDPlusPlusLearner(Learner):
             _matrix_factorization(ratings=data,feedback=self.feedback,
                                   bias=self.bias, shape=self.shape,
                                   order=self.order, K=self.K, steps=self.steps,
-                                  alpha=self.alpha, beta=self.beta,
+                                  alpha=self.alpha, alpha_bias=self.alpha_bias, beta=self.beta,
                                   verbose=False, random_state=self.random_state)
 
         model = SVDPlusPlusModel(P=self.P, Q=self.Q, Y=self.Y, bias=self.bias,
